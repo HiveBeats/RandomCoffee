@@ -4,66 +4,40 @@ public class Participant
 {
     private Participant(){}
     
-    public Participant(string id, string username, Coffee coffee)
+    public Participant(string username, Coffee coffee)
     {
-        Id = id;
+        Id = Guid.NewGuid();
         UserName = username;
         ScheduledAt = DateTime.UtcNow;
         CoffeeId = coffee.Id;
     }
     
-    public string Id { get; set; }
-    public string UserName { get; set; }
-    public DateTime ScheduledAt { get; set; }
-    public Guid CoffeeId { get; set; }
-    public Coffee Coffee { get; set; }
+    public Guid Id { get; init; }
+    public string UserName { get; init; }
+    public DateTime ScheduledAt { get; init; }
+    public Guid CoffeeId { get; init; }
+    public Coffee Coffee { get; init; }
 }
 
 public class Coffee
 {
+    private Coffee(){}
     public Coffee(Group group)
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
         GroupId = Group.Id;
     }
-    public Guid Id { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? AnnouncedAt { get; set; }
-    public List<Participant> CoffeeParticipants { get; set; } = new List<Participant>();
-    public string GroupId { get; set; }
-    public Group Group { get; set; }
+    public Guid Id { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime? AnnouncedAt { get; private set; }
+    public List<Participant> CoffeeParticipants { get; init; } = new List<Participant>();
+    public string GroupId { get; init; }
+    public Group Group { get; init; }
 
     public void AddParticipant(Participant participant)
     {
         CoffeeParticipants.Add(participant);
-    }
-}
-
-public class Group
-{
-    public Group(string chatId)
-    {
-        Id = chatId;
-    }
-    
-    public string Id { get; set; }
-    public List<Coffee> Coffees { get; set; } = new List<Coffee>();
-
-    public void AddCoffee()
-    {
-        Coffees.Add(new Coffee(this));
-    }
-
-    public void AddParticipant(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-            throw new ArgumentException("Username cannot be null or empty.", nameof(username));
-        
-        var coffee = Coffees.LastOrDefault(x => x.AnnouncedAt == null);
-        if (coffee == null)
-            throw new ApplicationException("Ты не успел подписаться на текущую встречу. В понедельник я объявлю сбор на следующую, не пропусти!");
-        coffee.AddParticipant(new Participant(Guid.NewGuid().ToString(), username, coffee));
     }
     
     private List<List<Participant>> GroupParticipants(List<Participant> participants)
@@ -96,17 +70,64 @@ public class Group
         }
     }
 
+    public List<List<Participant>> AnnounceForParticipants()
+    {
+        AnnouncedAt = DateTime.UtcNow;
+        return GroupParticipants(CoffeeParticipants);
+    }
+}
+
+public class Group
+{
+    private Group(){}
+    public Group(string chatId)
+    {
+        Id = chatId;
+    }
+    
+    public string Id { get; init; }
+    public List<Coffee> Coffees { get; init; } = new List<Coffee>();
+
+    public void AddCoffee()
+    {
+        Coffees.Add(new Coffee(this));
+    }
+
+    public void AddParticipant(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username cannot be null or empty.", nameof(username));
+        
+        var coffee = Coffees.LastOrDefault(x => x.AnnouncedAt == null);
+        if (coffee == null)
+            throw new ApplicationException($"Ты не успел подписаться на текущую встречу. В пятницу ({GetNextFriday(DateTime.UtcNow):dd.MM.yyyy}) я объявлю сбор на следующую, не пропусти!");
+        
+        coffee.AddParticipant(new Participant(username, coffee));
+    }
+
     public string? AnnounceCoffee()
     {
         var coffee = Coffees.LastOrDefault(x => x.AnnouncedAt == null);
         if (coffee == null)
             return null;
         
-        coffee.AnnouncedAt = DateTime.UtcNow;
-        
-        var groups = GroupParticipants(coffee.CoffeeParticipants);
+        var groups = coffee.AnnounceForParticipants();
         var groupStrings = string.Join(Environment.NewLine, groups.Select(x => string.Join(" \u2615\ufe0f ", x.Select(y => $"@{y.UserName}"))));
         return
             $"Появилась информация о кофе-встречах.\nГруппы для кофе готовы. Назначайте встречи:\n _Встречу назначает человек слева_\n{groupStrings}";
+    }
+    
+    private static DateTime GetNextFriday(DateTime fromDate)
+    {
+        // Calculate the days until the next Friday
+        int daysUntilFriday = ((int)DayOfWeek.Friday - (int)fromDate.DayOfWeek + 7) % 7;
+        
+        // If today is Friday, we want the next Friday, not today
+        if (daysUntilFriday == 0)
+        {
+            daysUntilFriday = 7;
+        }
+        
+        return fromDate.AddDays(daysUntilFriday);
     }
 }
