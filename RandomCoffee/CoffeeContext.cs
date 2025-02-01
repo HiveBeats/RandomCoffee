@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Telegram.Bot.Types.Enums;
 
 namespace RandomCoffee;
 
@@ -29,7 +28,7 @@ public class CoffeeContext : DbContext
 
 
         modelBuilder.Entity<Coffee>()
-            .Property(x => x.Id).HasDefaultValueSql("uuid()");
+            .Property(x => x.Id);
 
         modelBuilder.Entity<Coffee>()
             .Property(x => x.GroupId).HasMaxLength(64);
@@ -43,13 +42,13 @@ public class CoffeeContext : DbContext
         modelBuilder.Entity<Coffee>()
             .HasKey(x => x.Id);
 
-        modelBuilder.Entity<Coffee>()
-            .HasIndex(x => x.GroupId);
+        // modelBuilder.Entity<Coffee>()
+        //     .HasIndex(x => x.GroupId);
         modelBuilder.Entity<Coffee>()
             .HasIndex(x => x.AnnouncedAt);
 
         modelBuilder.Entity<Participant>()
-            .Property(x => x.Id).HasDefaultValueSql("uuid()");
+            .Property(x => x.Id);
 
         modelBuilder.Entity<Participant>()
             .Property(x => x.UserName).HasMaxLength(128);
@@ -57,8 +56,8 @@ public class CoffeeContext : DbContext
         modelBuilder.Entity<Participant>()
             .HasKey(x => x.Id);
 
-        modelBuilder.Entity<Participant>()
-            .HasIndex(x => x.CoffeeId);
+        // modelBuilder.Entity<Participant>()
+        //     .HasIndex(x => x.CoffeeId);
         modelBuilder.Entity<Participant>()
             .HasIndex(x => x.UserName);
         modelBuilder.Entity<Participant>()
@@ -70,12 +69,12 @@ public class CoffeeContext : DbContext
         modelBuilder.Entity<OutBoxMessage>()
             .Property(x => x.ChatId).HasMaxLength(64);
         modelBuilder.Entity<OutBoxMessage>()
-            .Property(x => x.ReplyToMessageId).HasMaxLength(512);
+            .Property(x => x.ReplyToMessageId).HasMaxLength(64);
         modelBuilder.Entity<OutBoxMessage>()
             .Property(x => x.Text).HasMaxLength(4096);
         modelBuilder.Entity<OutBoxMessage>()
             .Property(x => x.ParseMode)
-            .HasConversion(x => x.ToString(), x => Enum.Parse<ParseMode>(x));
+            .HasConversion<int>();
 
         modelBuilder.Entity<OutBoxMessage>()
             .HasKey(x => x.Id);
