@@ -103,7 +103,8 @@ public class Worker : BackgroundService
         }
     }
 
-    private async Task AnnounceCoffee(CancellationToken cancellationToken)
+    // ReSharper disable once MemberCanBePrivate.Global
+    public async Task AnnounceCoffee(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CoffeeContext>();
@@ -190,7 +191,8 @@ public class Worker : BackgroundService
         }
     }
 
-    private async Task InviteToCoffee(CancellationToken cancellationToken)
+    // ReSharper disable once MemberCanBePrivate.Global
+    public async Task InviteToCoffee(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CoffeeContext>();

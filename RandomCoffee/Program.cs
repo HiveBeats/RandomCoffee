@@ -1,5 +1,5 @@
 using Hangfire;
-using Hangfire.SQLite;
+using Hangfire.Storage.SQLite;
 using Microsoft.EntityFrameworkCore;
 using RandomCoffee;
 using Telegram.Bot;
@@ -19,9 +19,11 @@ builder.Services.AddDbContext<CoffeeContext>(b =>
 });
 
 
-var hangfireDbPath = Path.Join(path, "hangfire.db");
-builder.Services.AddHangfire(config =>
-    config.UseSQLiteStorage($"Data Source={hangfireDbPath}"));
+//var hangfireDbPath = Path.Join(path, "hangfire.db");
+builder.Services.AddHangfire(configuration => configuration
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSQLiteStorage());
 builder.Services.AddHangfireServer();
 
 
