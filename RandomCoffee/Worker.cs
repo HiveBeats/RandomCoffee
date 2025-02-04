@@ -32,7 +32,7 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             await ProcessOutboxMessages(stoppingToken);
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
         }
     }
 
@@ -58,19 +58,36 @@ public class Worker : BackgroundService
             var group = await db.Groups
                 .Include(x => x.Coffees)
                 .ThenInclude(x => x.CoffeeParticipants)
-                .FirstAsync(x => x.Id == chatId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == chatId, cancellationToken);
 
             var username = message.From.Username;
 
             try
             {
+                if (group == null)
+                {
+                    group = new Group(chatId);
+                    db.Groups.Add(group);
+
+                    var coffeeInvite = group.InviteToNewCoffee();
+                    if (!string.IsNullOrWhiteSpace(coffeeInvite))
+                    {
+                        db.OutBoxMessages.Add(new OutBoxMessage
+                        {
+                            ChatId = group.Id,
+                            Text = coffeeInvite,
+                            ParseMode = ParseMode.Markdown,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
                 group.AddParticipant(username);
                 var text =
                     $"Отлично, в понедельник {DateTime.UtcNow.GetNext(DayOfWeek.Monday):dd.MM.yyyy} я опубликую пары в чат\n";
                 db.OutBoxMessages.Add(new OutBoxMessage
                 {
                     ChatId = chatId,
-                    ReplyToMessageId = message.MessageId.ToString(),
+                    ReplyToMessageId = message.Id.ToString(),
                     Text = text,
                     ParseMode = ParseMode.Markdown,
                     CreatedAt = DateTime.UtcNow
@@ -83,7 +100,7 @@ public class Worker : BackgroundService
                 db.OutBoxMessages.Add(new OutBoxMessage
                 {
                     ChatId = chatId,
-                    ReplyToMessageId = message.MessageId.ToString(),
+                    ReplyToMessageId = message.Id.ToString(),//.MessageId.ToString(),
                     Text = e.Message,
                     ParseMode = ParseMode.Markdown,
                     CreatedAt = DateTime.UtcNow
@@ -167,7 +184,10 @@ public class Worker : BackgroundService
                     ? int.Parse(message.ReplyToMessageId)
                     : null;
                 await _botClient.SendMessage(message.ChatId,
-                    messageThreadId: threadId,
+                    replyParameters: threadId.HasValue ? new ReplyParameters()
+                    {
+                        MessageId = threadId.Value
+                    } : null,
                     text: message.Text,
                     parseMode: ParseMode.Markdown,
                     cancellationToken: stoppingToken);
@@ -187,6 +207,8 @@ public class Worker : BackgroundService
                 // Log any errors that occur during message processing
                 _logger.LogError(ex, "Error processing message Id: {messageId}", message.Id);
                 await transaction.RollbackAsync(stoppingToken);
+                message.ProcessedAt = new DateTime(2001, 09, 11, 11, 11, 11, DateTimeKind.Utc);
+                await db.SaveChangesAsync(stoppingToken);
             }
         }
     }

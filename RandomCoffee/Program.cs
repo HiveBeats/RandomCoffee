@@ -7,7 +7,7 @@ using Telegram.Bot;
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
 //todo: bot token
-builder.Services.AddTransient<TelegramBotClient>(sp => new TelegramBotClient(""));
+builder.Services.AddSingleton<TelegramBotClient>(sp => new TelegramBotClient(""));
 
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);

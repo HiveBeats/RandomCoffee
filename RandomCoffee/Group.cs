@@ -31,7 +31,7 @@ public class Coffee
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
-        GroupId = Group.Id;
+        GroupId = group.Id;
     }
 
     public Guid Id { get; init; }
@@ -98,7 +98,7 @@ public class Group
     {
         Coffees.Add(new Coffee(this));
         return
-            $"Привет!\nХочешь на следующей неделе встретиться и попить кофе с участником из группы?\n Если да, отправь \"\\coffee\" в чат. Согласиться можно до понедельника ({DateTime.UtcNow.GetNext(DayOfWeek.Monday).ToString("dd.MM.yyyy")})";
+            $"Привет!\nХочешь на следующей неделе встретиться и попить кофе с участником из группы?\nЕсли да, отправь \"\\coffee\" в чат. Согласиться можно до понедельника ({DateTime.UtcNow.GetNext(DayOfWeek.Monday).ToString("dd.MM.yyyy")})";
     }
 
     public void AddParticipant(string username)
